@@ -1,9 +1,20 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+import time
 
-# Modelo Epidemiológico SIR
-class PoblacionSIR:
+# Decorador para medir tiempo de ejecución
+def medir_tiempo(func):
+    def wrapper(*args, **kwargs):
+        inicio = time.time()
+        resultado = func(*args, **kwargs)
+        fin = time.time()
+        print(f"Tiempo de ejecución de {func.__name__}: {fin - inicio:.4f} segundos")
+        return resultado
+    return wrapper
+
+# Clase base para modelos epidemiológicos
+class ModeloEpidemiologico:
     def __init__(self, S, I, R, beta, gamma, N):
         self.S = S  # Susceptibles
         self.I = I  # Infectados
@@ -13,9 +24,15 @@ class PoblacionSIR:
         self.N = N  # Población total
         self.t = 0  # Tiempo actual
 
-    def __call__(self):
-        return {'S': self.S, 'I': self.I, 'R': self.R}
+    def paso_tiempo(self, dt=0.1):
+        raise NotImplementedError("Este método debe ser implementado por la subclase")
 
+# Modelo Epidemiológico SIR que hereda de ModeloEpidemiologico
+class PoblacionSIR(ModeloEpidemiologico):
+    def __init__(self, S, I, R, beta, gamma, N):
+        super().__init__(S, I, R, beta, gamma, N)
+
+    
     def paso_tiempo(self, dt=0.1):
         """
         Resolver las ecuaciones diferenciales SIR usando el método de Euler.
@@ -32,6 +49,9 @@ class PoblacionSIR:
         self.R += dR
         self.t += dt
 
+    def __call__(self):
+        return {'S': self.S, 'I': self.I, 'R': self.R}
+
     def __str__(self):
         return f"Tiempo: {self.t:.2f}, S: {self.S:.2f}, I: {self.I:.2f}, R: {self.R:.2f}"
 
@@ -43,6 +63,7 @@ class SimuladorSIR:
         self.dt = dt
         self.resultados = {'t': [], 'S': [], 'I': [], 'R': []}
 
+    @medir_tiempo
     def ejecutar_simulacion(self):
         """
         Simular la propagación de la enfermedad en el tiempo.
@@ -60,6 +81,7 @@ class SimuladorSIR:
         return self.resultados
 
 
+@medir_tiempo
 def graficar_sir(resultados):
     """
     Función para graficar los resultados del modelo SIR.
@@ -76,6 +98,7 @@ def graficar_sir(resultados):
     plt.show()
 
 
+@medir_tiempo
 def animar_sir(resultados):
     """
     Crear una animación que muestre la evolución de los grupos poblacionales en el tiempo.
